@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Ассистент по поиску дублей фото</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>📷 Ассистент по поиску дублей фото</h1>
+  <p class="subtitle">Ищет одинаковые фотографии в папке и её подпапках, откладывает подозрительные копии в отдельную папку на проверку. Ничего не загружается никуда — вся работа идёт локально, в браузере.</p>
+</header>
+
+<main id="app">
+
+  <!-- ЭКРАН 1: СТАРТ -->
+  <section id="screen-intro" class="screen">
+    <div class="card">
+      <h2>Шаг 1. Что проверяем?</h2>
+
+      <div class="mode-toggle">
+        <button id="btn-mode-single" class="btn btn-mode active">📁 Одна папка</button>
+        <button id="btn-mode-compare" class="btn btn-mode">📁📁 Сравнить две папки</button>
+      </div>
+
+      <!-- Режим: одна папка -->
+      <div id="panel-single">
+        <p>Ассистент сам найдёт все фото во всех вложенных подпапках, сравнит их по содержимому (не по имени файла!) и покажет точные совпадения.</p>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-dry-run-single">
+          Только показать дубли — не создавать папку и не переносить файлы
+        </label>
+        <button id="btn-pick-folder" class="btn btn-primary">📂 Выбрать папку (полный режим)</button>
+        <p class="hint" id="fs-support-hint"></p>
+      </div>
+
+      <!-- Режим: сравнение двух папок -->
+      <div id="panel-compare" class="hidden">
+        <p>Папка <b>A</b> — эталон, её содержимое не меняется. Папка <b>B</b> — проверяемая: всё, что совпадёт с A (или задублируется само внутри B), будет перенесено в папку с дублями внутри B.</p>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-dry-run-compare">
+          Только показать дубли — ничего не переносить и не создавать (обе папки остаются нетронутыми)
+        </label>
+
+        <div class="pick-row">
+          <button id="btn-pick-a" class="btn btn-secondary">📂 Выбрать папку A (эталон)</button>
+          <span id="label-a" class="folder-label">не выбрана</span>
+        </div>
+        <div class="pick-row">
+          <button id="btn-pick-b" class="btn btn-secondary">📂 Выбрать папку B (проверяемая)</button>
+          <span id="label-b" class="folder-label">не выбрана</span>
+        </div>
+
+        <button id="btn-start-compare" class="btn btn-primary" disabled>▶️ Начать сравнение</button>
+        <p class="hint" id="fs-support-hint-compare"></p>
+      </div>
+
+      <details class="fallback-details">
+        <summary>Мой браузер не поддерживает полный режим — что делать?</summary>
+        <p>Можно выбрать файлы вручную для проверки. В этом режиме ассистент найдёт дубли и покажет отчёт, но <b>не сможет</b> сам создавать папки и переносить файлы — только показать, где лежат совпадения.</p>
+        <button id="btn-pick-files-fallback" class="btn btn-secondary">🖼️ Выбрать фото вручную (только отчёт)</button>
+      </details>
+    </div>
+
+    <div class="card explain-card">
+      <h3>Что ассистент делает сам, без подтверждения</h3>
+      <ul>
+        <li>Ищет файлы, похожие на фото (по расширению и по содержимому файла)</li>
+        <li>Сравнивает их по хешу содержимого — находит точные совпадения</li>
+        <li>Создаёт папку «Дубликаты_на_проверку»</li>
+        <li>Переносит туда подозрительные копии, помечая «оригинал» / «дубль»</li>
+      </ul>
+      <h3>Что требует вашего подтверждения</h3>
+      <ul>
+        <li>Окончательное удаление дублей</li>
+        <li>Возврат файла обратно в исходную папку</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 2: СКАНИРОВАНИЕ -->
+  <section id="screen-scan" class="screen hidden">
+    <div class="card">
+      <h2>Сканирую...</h2>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <p id="scan-status">Просмотр папок…</p>
+      <ul class="scan-stats">
+        <li>Файлов просмотрено: <b id="stat-scanned">0</b></li>
+        <li>Найдено фото: <b id="stat-photos">0</b></li>
+        <li>Хешей вычислено: <b id="stat-hashed">0</b></li>
+      </ul>
+      <button id="btn-cancel-scan" class="btn btn-danger">⏹ Отменить сканирование</button>
+      <p class="hint">Отмена безопасна: ничего не удаляется и не переносится, файлы уже перенесённые в карантин до отмены — останутся там.</p>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 3: РЕЗУЛЬТАТЫ -->
+  <section id="screen-results" class="screen hidden">
+    <div class="card summary-card">
+      <h2>Готово</h2>
+      <p id="summary-text"></p>
+      <div class="summary-actions">
+        <button id="btn-download-report" class="btn btn-secondary">⬇️ Скачать отчёт (CSV)</button>
+        <button id="btn-restart" class="btn btn-ghost">🔄 Проверить другую папку</button>
+      </div>
+    </div>
+
+    <div id="groups-container"></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Работает полностью локально в браузере. Файлы никуда не отправляются.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

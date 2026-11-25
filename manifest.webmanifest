@@ -1,0 +1,9 @@
+{
+  "name": "Ассистент по поиску дублей фото",
+  "short_name": "Дубли фото",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#3457d5",
+  "icons": []
+}
